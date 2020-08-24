@@ -1,6 +1,6 @@
 # sAP &mdash; Code for Towards Streaming Perception
 
-<p align="center"><img alt="Teaser" src="doc/img/streaming.jpg"></p>
+<p align="center"><img alt="Teaser" src="doc/img/streaming.jpg" width="600px"></p>
 
 This repo contains code for our ECCV 2020 [**paper**](https://www.cs.cmu.edu/~mengtial/proj/streaming/Martin%20-%20Streaming%20Perception.pdf?v=0.1) (Towards Streaming Perception). sAP stands for streaming Average Precision.
 
@@ -40,4 +40,4 @@ If you use the code or the data for your research, please cite the paper:
 ```
 
 ## Acknowledgement
-We would like to thank the [mmdetection](https://github.com/open-mmlab/mmdetection) team for implementing so many different detectors in a single awesome repo with a unified interface! This greatly reduced the efforts for us to evaluate different detectors under our streaming setting.
+We would like to thank the [mmdetection](https://github.com/open-mmlab/mmdetection) team for implementing so many different detectors in a single awesome repo with a unified interface! This greatly reduced our efforts to evaluate different detectors under our streaming setting.

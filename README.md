@@ -22,7 +22,7 @@ The dataset used in this project (Argoverse-HD) can be found on the [**project p
 
 ## Getting started
 
-1. Follow the instructions [here](doc/data_setup.md) to download and setup the dataset.
+1. Follow the instructions [here](doc/data_setup.md) to download and set up the dataset.
 1. Follow the instructions [here](doc/code_setup.md) to install the dependencies.
 1. Check out the examples to run different tasks in `exp/*`.
 

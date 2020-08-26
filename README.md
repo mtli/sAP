@@ -2,7 +2,7 @@
 
 <p align="center"><img alt="Teaser" src="doc/img/streaming.jpg" width="500px"></p>
 
-This repo contains code for our ECCV 2020 [**paper**](https://www.cs.cmu.edu/~mengtial/proj/streaming/Martin%20-%20Streaming%20Perception.pdf?v=0.1) (Towards Streaming Perception). sAP stands for streaming Average Precision.
+This repo contains code for our ECCV 2020 [**paper**](https://arxiv.org/abs/2005.10420) (Towards Streaming Perception). sAP stands for streaming Average Precision.
 
 The dataset used in this project (Argoverse-HD) can be found on the [**project page**](http://www.cs.cmu.edu/~mengtial/proj/streaming/).
 

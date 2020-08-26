@@ -9,7 +9,7 @@ from os.path import join, isfile
 from pycocotools.coco import COCO
 import pycocotools.mask as maskUtils
 
-# the line below is for running both in the current directory 
+# the line below is for running in both the current directory 
 # and the repo's root directory
 import sys; sys.path.insert(0, '..'); sys.path.insert(0, '.')
 from util import mkdir2

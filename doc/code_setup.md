@@ -17,14 +17,19 @@ The created virtual environment is named `sap` and you can activate it by
 conda activate sap
 ```
 
-The next step is to clone [mmdetection](https://github.com/open-mmlab/mmdetection) and switch to a specific version. Pick a suitable location (not within this repo) for cloning, and take note of it since you will later need to refer to its model configurations.
+The next step is to install [mmdetection](https://github.com/open-mmlab/mmdetection) and its compatiable version of mmcv. First, install mmcv:
+```
+pip install mmcv==0.2.11
+```
+
+Then clone mmdetection and switch to a specific version. Pick a suitable location (not within this repo) for cloning, and take note of it since you will later need to refer to its model configurations.
 ```
 git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 git checkout 36b6577e3458c0e068f4523d60ce8c6e7c19febf
 ```
 
-Install mmdetection as a dependency (within the `sap` environment):
+Install mmdetection within the `sap` environment:
 ```
 pip install -e .
 ```

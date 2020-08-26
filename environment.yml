@@ -6,10 +6,10 @@ dependencies:
 - python=3.6
 - Cython
 - numpy
+- tqdm
 - pytorch=1.1
 - cudatoolkit=10.0
 - torchvision
 - pip:
-  - mmcv==0.2.11
   - pycocotools@git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools
   - html4vision

@@ -1,4 +1,4 @@
-# Data Setup
+# Code Setup
 
 ## Requirement
 You need an environment that has python and CUDA installed.
@@ -52,3 +52,11 @@ python setup.py build
 
 ## Modify paths and run the scripts
 The entry-point scripts for different tasks can be found under `exp/`. You need to modify the paths for the dataset, model configuration and weights, and the output folder before running them. <em>Note that those scripts should be run from the root directory of this repo</em>.
+
+
+## Setup verification
+
+If you have set up correctly, running `exp/offline_det.sh` should be able to get you an AP of 19.4:
+```
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.194
+```

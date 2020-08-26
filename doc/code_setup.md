@@ -46,13 +46,12 @@ Note that Argoverse-HD is annotated according to COCO's format and class definit
 ## (Optionally) Compile the tracking association module
 If you plan to use tracking or forecasting, you need to compile the IoU based association function. Change the directory back to this repo's root directory and run:
 ```
-python setup.py build
+python setup.py build_ext --inplace
 ```
 
 
 ## Modify paths and run the scripts
-The entry-point scripts for different tasks can be found under `exp/`. You need to modify the paths for the dataset, model configuration and weights, and the output folder before running them. <em>Note that those scripts should be run from the root directory of this repo</em>.
-
+The entry-point scripts for different tasks can be found under `exp/`. You need to modify the paths for the dataset, model configuration and weights, and the output folder before running them. <em>Note that those scripts should be run from the root directory of this repo</em>. For more information on these scripts, check out 
 
 ## Setup verification
 

@@ -124,11 +124,9 @@ def main():
             
     t_assoc = []
     t_forecast = []
-    # tt = []
 
     with torch.no_grad():
         kf_F = torch.eye(8)
-        # kf_F[3, 7] = 1
         kf_Q = torch.eye(8)
         kf_R = 10*torch.eye(4)
         kf_P_init = 100*torch.eye(8).unsqueeze(0)
@@ -264,28 +262,15 @@ def main():
 
                         # PyTorch small matrix multiplication is slow
                         # use numpy instead
-                        
-                        # kf_F = make_F(kf_F, dt)
-                        # bboxes_t3 = x2bbox(batch_kf_predict_only(kf_F, kf_x))
-                        # t5 = perf_counter()
                         kf_x_np = kf_x[:, :, 0].numpy()
-                        # t6 = perf_counter()
                         bboxes_t3 = kf_x_np[:n_matched12, :4] + dt*kf_x_np[:n_matched12, 4:]
                         if n_matched12 < len(kf_x):
                             bboxes_t3 = np.concatenate((bboxes_t3, kf_x_np[n_matched12:, :4]))
                         
                         bboxes_t3, keep = extrap_clean_up(bboxes_t3, w_img, h_img, lt=True)
-                        # torch_keep = torch.from_numpy(keep) # boolean mask
-                        # kf_x = kf_x[torch_keep]
-                        # kf_P = kf_P[torch_keep]
-                        # labels = labels[keep]
-                        # scores = scores[keep]
-                        # tracks = tracks[keep]
-
                         labels_t3 = labels[keep]
                         scores_t3 = scores[keep]
                         tracks_t3 = tracks[keep]
-                        # tt.append(t6 - t5)
 
 
                     t4 = perf_counter()
@@ -317,17 +302,11 @@ def main():
                             out_file=vis_path,
                         )
 
-    # pr.disable()
-    # pr.dump_stats('pps_iou_lin_extrap.prof')
-
-    # pickle.dump([t_assoc, t_forecast], open('pps_iou_lin_forecast_time', 'wb'))
     s2ms = lambda x: 1e3*x
     if len(t_assoc):
         print_stats(t_assoc, "RT association (ms)", cvt=s2ms)
     if len(t_forecast):
         print_stats(t_forecast, "RT forecasting (ms)", cvt=s2ms)    
-    # if len(tt):
-    #     print_stats(tt, "RT forecasting2 (ms)", cvt=s2ms)    
 
     out_path = join(opts.out_dir, 'results_ccf.pkl')
     if opts.overwrite or not isfile(out_path):

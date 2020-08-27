@@ -14,7 +14,7 @@ The dataset used in this project (Argoverse-HD) can be found on the [**project p
 - Streaming tracking \& forecasting
 - Simulated streaming detection, tracking, \& forecasting
 - Simulated streaming detection, tracking, \& forecasting with infinite GPUs 
-- Meta-detector Streamer (Coming soon!)
+- Meta-detector Streamer
 - Streaming evaluation
 - Single-frame schedule simulator
 - Helper functions for visualization (Coming soon!)
@@ -24,7 +24,7 @@ The dataset used in this project (Argoverse-HD) can be found on the [**project p
 
 1. Follow the instructions [here](doc/data_setup.md) to download and set up the dataset.
 1. Follow the instructions [here](doc/code_setup.md) to install the dependencies.
-1. Check out the examples to run different tasks in `exp/*`.
+1. Check out the examples to run various tasks in `exp/*`. The documentation for these tasks can be found [here](doc/tasks.md).
 
 
 ## Citation

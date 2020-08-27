@@ -1,7 +1,7 @@
 # Code Setup
 
 ## Requirement
-You need an environment that has python and CUDA installed.
+You need an environment that has python and CUDA installed. For running on Windows, please read the additional notes [here](win_note.md).
 
 
 ## Installing dependencies

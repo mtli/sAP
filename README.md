@@ -11,9 +11,9 @@ The dataset used in this project (Argoverse-HD) can be found on the [**project p
 
 - Offline detection
 - Streaming (real-time online) detection
-- Streaming tracking \& forecasting (Coming soon!)
-- Simulated streaming detection, tracking, \& forecasting (Coming soon!)
-- Simulated streaming detection, tracking, \& forecasting with infinite GPUs (Coming soon!)
+- Streaming tracking \& forecasting
+- Simulated streaming detection, tracking, \& forecasting
+- Simulated streaming detection, tracking, \& forecasting with infinite GPUs 
 - Meta-detector Streamer (Coming soon!)
 - Streaming evaluation
 - Single-frame schedule simulator

@@ -17,7 +17,7 @@ The dataset used in this project (Argoverse-HD) can be found on the [**project p
 - Meta-detector Streamer
 - Streaming evaluation
 - Single-frame schedule simulator
-- Helper functions for visualization (Coming soon!)
+- Helper functions for visualization
 
 
 ## Getting started

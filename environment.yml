@@ -7,6 +7,7 @@ dependencies:
 - Cython
 - numpy
 - tqdm
+- scikit-image
 - pytorch=1.1
 - cudatoolkit=10.0
 - torchvision

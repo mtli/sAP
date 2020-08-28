@@ -117,7 +117,6 @@ def main():
 
         frame_list = [item.name for item in scandir(seq_dir_A) if item.is_file() and item.name.endswith('.jpg')]
         frame_list = sorted(frame_list)
-        # frame_list = frame_list[:330]
         for ii, frame in enumerate(tqdm(frame_list)):
             out_path = join(seq_dir_out, frame)
             if not opts.overwrite and isfile(out_path):

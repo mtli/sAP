@@ -31,9 +31,8 @@ n_show = 100
 np.random.seed(0)
 
 srv_dir = data_dir
-srv_port = 40001
-# host_name = socket.gethostname()
-host_name = 'trinity.vision.cs.cmu.edu'
+srv_port = 1234
+host_name = socket.gethostname()
 
 ##
 

@@ -91,7 +91,7 @@ The above components render each frame and to make a video, you need `vis/make_v
 Code: `vis/make_videos.py`, `vis/make_videos_numbered.py`
 
 
-### Web display
+### Web Display
 
 <p align="center"><img alt="web display" src="img/web-display.gif" width="700px"></p>
 

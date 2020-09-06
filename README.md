@@ -2,6 +2,8 @@
 
 <p align="center"><img alt="Teaser" src="doc/img/streaming.jpg" width="500px"></p>
 
+<p style="color: #fc4903">ECCV Best Paper Honorable Mention Award</p>
+
 This repo contains code for our ECCV 2020 [**paper**](https://arxiv.org/abs/2005.10420) (Towards Streaming Perception). sAP stands for streaming Average Precision.
 
 The dataset used in this project (Argoverse-HD) can be found on the [**project page**](http://www.cs.cmu.edu/~mengtial/proj/streaming/).
@@ -19,6 +21,10 @@ The dataset used in this project (Argoverse-HD) can be found on the [**project p
 - Single-frame schedule simulator
 - Helper functions for visualization
 
+
+<p align="center"><img alt="Teaser" src="doc/img/latency-aware.gif" width="600px" style=" border: 1px solid black;
+  -webkit-box-shadow: 2px 2px 1px #666;
+  box-shadow: 2px 2px 1px #666;"></p>
 
 ## Getting started
 

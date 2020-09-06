@@ -2,7 +2,7 @@
 
 <p align="center"><img alt="Teaser" src="doc/img/streaming.jpg" width="500px"></p>
 
-<p style="color: #fc4903">ECCV Best Paper Honorable Mention Award</p>
+![#fc4903](https://via.placeholder.com/15/fc4903/000000?text=+) ECCV Best Paper Honorable Mention Award
 
 This repo contains code for our ECCV 2020 [**paper**](https://arxiv.org/abs/2005.10420) (Towards Streaming Perception). sAP stands for streaming Average Precision.
 

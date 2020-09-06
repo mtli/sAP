@@ -97,7 +97,7 @@ Code: `vis/make_videos.py`, `vis/make_videos_numbered.py`
 
 To obtain a global view of the annotation or solution quality, we need a more organized display than a bunch of images and videos separated in different folders. For this purpose, we adopt solutions from [HTML4Vision](https://github.com/mtli/HTML4Vision), which conveniently organizes visualization for different examples in the dataset in a web page, and provides an HTTP server for serving the webpages on a remote machine. Here, we provide two displays &mdash; grid and table. The grid display (`vis/html_all_seq.py`) is used to show all sequences in (a split of) the dataset. Each sequence has a clickable thumbnail tiled in a grid, and the corresponding video will pop up when clicked. The table display (`vis/html_sampled_img.py`) is used to qualitatively compare different methods (see the figure above). It has each method (including the ground truth) as each column and each sampled image as a row. After generating the webpage, you can refer to [HTML4Vision's doc](https://github.com/mtli/HTML4Vision) for how to serve the webpage on a remote machine.
 
-Code: `vis/make_videos.py`, `vis/make_videos_numbered.py`
+Code: `vis/html_all_seq.py`, `vis/html_sampled_img.py`
 
 
 ## Schedule Simulator

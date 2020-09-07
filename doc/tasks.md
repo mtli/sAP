@@ -32,7 +32,7 @@ Code: `exp/extract_runtime.sh`, `util/add_to_runtime_zoo.py`
 
 This task achieves the same goal as streaming detection except that both the detection output and the runtime can be simulated. There are two levels of simulation. The first level only simulates runtime. In this case, the code does not measure the runtime of algorithms but draws a sample from the provided runtime distribution (see the previous section for runtime distributions). The second level simulates both the runtime and the detection results. In this case, in addition to providing runtime distributions, you also need to provide per-frame detection results on the entire dataset. The simulator will fetch the corresponding result based on the sampled runtime. The output format is the same as streaming detection. Note that runtimes can be scaled during simulation using argument `--perf-factor` (performance factor, e.g., 1.2 means 20% faster). Also, providing argument `--dynamic-schedule` enables our dynamic scheduling policy (shrinking-tail).
 
-<p align="center"><img alt="computational constraints" src="img/fig4.png" width="900px"></p>
+<p align="center"><img alt="computational constraints" src="img/fig4.png" width="700px"></p>
 
 By default, the code assumes a single GPU computation model, while code with `_inf` suffix assumes an infinite GPU computation model.
 
@@ -47,7 +47,7 @@ Code: `exp/forecast.sh`, `forecast/pps_forecast_kf.py`
 
 ## Meta-Detector Streamer
 
-<p align="center"><img alt="streaming perception system" src="img/streaming-system.png" width="900px"></p>
+<p align="center"><img alt="streaming perception system" src="img/streaming-system.png" width="700px"></p>
 
 Streamer is an added layer of scheduling and forecasting on top of a given detector. As shown above, it converts a detector with any runtime to a streaming perception system that has an arbitrarily fixed output rate. The scheduling and forecasting are done in separate CPU threads (multiprocessing for Python) and their runtimes, depending on the algorithm complexity, also impact the final streaming accuracy. The current implementation assumes that the detector follows mmdetection's interface. If you want to add other detectors, you can convert it to mmdetection's interface by wrapping up the detector's code in two functions: (1) `init_detector`: initializes model and loads the weights; (2) `inference_detector`: preprocesses the image and runs the detector on the image.
 
@@ -75,7 +75,7 @@ Code: `exp/vis_det_th.sh`, `exp/vis_annot.sh`, `vis/vis_det_th.py`
 
 ### Contrastive Visualization
 
-<p align="center"><img alt="contrast visualization" src="img/contrast-swing.gif" width="700px"></p>
+<p align="center"><img alt="contrast visualization" src="img/contrast-swing.gif" width="500px"></p>
 
 This component is designed to contrast two different settings, and it composes input from two sequences (folders of frames) to form a single sequence with a bar separating the two. The composition can be either vertical (default) or horizontal (enabled by `--horizontal` flag) and the separator can have an optional animation that switches between the individual views and the contrastive view (provide the `--split-animation` argument). The position of the separator can also be adjusted through the `--split-pos` argument, which specifies a relative position over either the width or height of the image (default to 0.5).
 
@@ -93,7 +93,7 @@ Code: `vis/make_videos.py`, `vis/make_videos_numbered.py`
 
 ### Web Display
 
-<p align="center"><img alt="web display" src="img/web-display.gif" width="700px"></p>
+<p align="center"><img alt="web display" src="img/web-display.gif" width="600px"></p>
 
 To obtain a global view of the annotation or solution quality, we need a more organized display than a bunch of images and videos separated in different folders. For this purpose, we adopt solutions from [HTML4Vision](https://github.com/mtli/HTML4Vision), which conveniently organizes visualization for different examples in the dataset in a web page, and provides an HTTP server for serving the webpages on a remote machine. Here, we provide two displays &mdash; grid and table. The grid display (`vis/html_all_seq.py`) is used to show all sequences in (a split of) the dataset. Each sequence has a clickable thumbnail tiled in a grid, and the corresponding video will pop up when clicked. The table display (`vis/html_sampled_img.py`) is used to qualitatively compare different methods (see the figure above). It has each method (including the ground truth) as each column and each sampled image as a row. After generating the webpage, you can refer to [HTML4Vision's doc](https://github.com/mtli/HTML4Vision) for how to serve the webpage on a remote machine.
 

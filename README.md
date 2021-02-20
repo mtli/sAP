@@ -3,6 +3,7 @@
 <p align="center"><img alt="Teaser" src="doc/img/streaming.jpg" width="500px"></p>
 
 ![#fc4903](https://via.placeholder.com/15/fc4903/000000?text=+) ECCV Best Paper Honorable Mention Award
+![#fcc203](https://via.placeholder.com/15/fcc203/000000?text=+) Feb 2021: Announcing the [Streaming Perception Challenge](https://eval.ai/web/challenges/challenge-page/800/overview) (CVPR 2021)!
 
 This repo contains code for our ECCV 2020 [**paper**](https://arxiv.org/abs/2005.10420) (Towards Streaming Perception). sAP stands for streaming Average Precision.
 

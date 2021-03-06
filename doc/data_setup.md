@@ -11,7 +11,7 @@ If you already have Argoverse 1.1, then you only need to download our small anno
 
 Organize the images from Argoverse 1.1 into the following structure:
 <p align="center"><img alt="File structure" src="img/Argoverse_file_structure.png"></p>
-The hash strings represent different video sequences in Argoverse, and `ring_front_center` is one of the sensors for that sequence. Argoverse-HD annotations correspond to images from this sensor. Information from other sensors (other ring cameras or LIDAR) is not used, but our framework can be also extended to these modalities or to a multi-modality setting.
+The hash strings represent different video sequences in Argoverse, and `ring_front_center` is one of the sensors for that sequence. Argoverse-HD annotations correspond to images from this sensor. Information from other sensors (other ring cameras or LiDAR) is not used, but our framework can be also extended to these modalities or to a multi-modality setting.
 
 Unzip `Argoverse-HD.zip` into the same folder as Argoverse:
 <p align="center"><img alt="File structure" src="img/ArgoverseHD_file_structure.png"></p>

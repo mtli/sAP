@@ -15,7 +15,9 @@ from util import mkdir2
 
 def imread(path, method='PIL'):
     if method == 'PIL':
-        return np.asarray(Image.open(path))
+        # using "array" istead of "asarray" since
+        # "torch.from_numpy" requires writeable array in PyTorch 1.6
+        return np.array(Image.open(path))
     else:
         return mmcv.imread(path)
 

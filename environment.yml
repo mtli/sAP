@@ -3,14 +3,16 @@ channels:
 - anaconda
 - pytorch
 dependencies:
-- python=3.6
+- python=3.8
 - Cython
-- numpy
 - tqdm
 - scikit-image
-- pytorch=1.1
-- cudatoolkit=10.0
-- torchvision
+- pytorch=1.6.0=py3.8_cuda102_cudnn7_0
+- cudatoolkit=10.2
+- torchvision=0.7.0
+- pip
 - pip:
+  - numpy
+  - scipy
   - pycocotools@git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools
   - html4vision

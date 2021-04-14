@@ -1,5 +1,6 @@
 '''
-APIs for interfacing detectors (mainly mmdetection):
+APIs for interfacing detectors (mainly mmdetection)
+Note that only a subset of methods are supported right now
 '''
 
 from functools import partial
@@ -17,18 +18,14 @@ import mmcv
 from mmcv.runner import load_checkpoint
 
 from mmdet.core import get_classes, bbox2roi, bbox_mapping, merge_aug_masks
-from mmdet.models import build_detector
-from mmdet.models.detectors import SingleStageDetector, TwoStageDetector
-from mmdet.models.detectors.test_mixins import MaskTestMixin
-from mmdet.models.mask_heads.fcn_mask_head import FCNMaskHead
-from mmdet.models.detectors.cascade_rcnn import CascadeRCNN
-from mmdet.models.detectors.htc import HybridTaskCascade
-
-from . import parse_mmdet_result, parse_det_result
+from mmdet.models import build_detector, \
+    SingleStageDetector, TwoStageDetector, StandardRoIHead, \
+    CascadeRoIHead
 
 
 # Below are modified functions of (an old version of)
 # mmdetection's preprocessing pipeline
+
 class ImageTransform(object):
     """Preprocess an image.
 
@@ -70,7 +67,6 @@ class ImageTransform(object):
         img = torch.from_numpy(img).to(device).unsqueeze(0)
 
         return img, img_shape, pad_shape, scale_factor
-
 
 class ImageTransformGPU(object):
     """Preprocess an image ON A GPU.
@@ -137,132 +133,16 @@ class ImageTransformGPU(object):
             pad_shape = img_shape
         return img, img_shape, pad_shape, scale_factor
 
+
 # Below are modified functions of (an old version of)
 # mmdetection's detectors. Note that instead of creating 
 # standalone detectors, we apply modular patches to mmdetection
-def _get_seg_masks(self, mask_pred, det_bboxes, det_labels, rcnn_test_cfg,
-                    ori_shape, scale_factor, rescale):
-    """Get segmentation masks from mask_pred and bboxes.
 
-    Args:
-        mask_pred (Tensor or ndarray): shape (n, #class+1, h, w).
-            For single-scale testing, mask_pred is the direct output of
-            model, whose type is Tensor, while for multi-scale testing,
-            it will be converted to numpy array outside of this method.
-        det_bboxes (Tensor): shape (n, 4/5)
-        det_labels (Tensor): shape (n, )
-        img_shape (Tensor): shape (3, )
-        rcnn_test_cfg (dict): rcnn testing config
-        ori_shape: original image size
-
-    Returns:
-        list[list]: encoded masks
-    """
-    if isinstance(mask_pred, torch.Tensor):
-        mask_pred = mask_pred.sigmoid().cpu().numpy()
-    assert isinstance(mask_pred, np.ndarray)
-    # when enabling mixed precision training, mask_pred may be float16
-    # numpy array
-    mask_pred = mask_pred.astype(np.float32)
-
-    # cls_segms = [[] for _ in range(self.num_classes - 1)]
-    segms = []
-    bboxes = det_bboxes.cpu().numpy()[:, :4]
-    labels = det_labels.cpu().numpy() + 1
-
-    if rescale:
-        img_h, img_w = ori_shape[:2]
-    else:
-        img_h = np.round(ori_shape[0] * scale_factor).astype(np.int32)
-        img_w = np.round(ori_shape[1] * scale_factor).astype(np.int32)
-        scale_factor = 1.0
-
-    for i in range(bboxes.shape[0]):
-        bbox = (bboxes[i, :] / scale_factor).astype(np.int32)
-        label = labels[i]
-        w = max(bbox[2] - bbox[0] + 1, 1)
-        h = max(bbox[3] - bbox[1] + 1, 1)
-
-        if not self.class_agnostic:
-            mask_pred_ = mask_pred[i, label, :, :]
-        else:
-            mask_pred_ = mask_pred[i, 0, :, :]
-        im_mask = np.zeros((img_h, img_w), dtype=np.uint8)
-
-        bbox_mask = mmcv.imresize(mask_pred_, (w, h))
-        bbox_mask = (bbox_mask > rcnn_test_cfg.mask_thr_binary).astype(
-            np.uint8)
-        im_mask[bbox[1]:bbox[1] + h, bbox[0]:bbox[0] + w] = bbox_mask
-        rle = maskUtils.encode(
-            np.array(im_mask[:, :, np.newaxis], order='F'))[0]
-        # cls_segms[label - 1].append(rle)
-        segms.append(rle)
-
-    # return cls_segms
-    return segms
-FCNMaskHead.get_seg_masks = _get_seg_masks
-# this is affecting all masks methods
-
-def _simple_test_mask(
-        self, x, img_meta,
-        det_bboxes, det_labels,
-        rescale=False, decode_mask=True,
-    ):
-    ''' 
-        this is a variant of simple_test_mask from test_mixins.py
-        used for mask timing
-    '''
-    # image shape of the first image in the batch (only one)
-    ori_shape = img_meta[0]['ori_shape']
-    scale_factor = img_meta[0]['scale_factor']
-    if det_bboxes.shape[0] == 0:
-        segm_result = [[] for _ in range(self.mask_head.num_classes - 1)]
-        if decode_mask:
-            return segm_result
-        else:
-            return None
-    else:
-        # if det_bboxes is rescaled to the original image size, we need to
-        # rescale it back to the testing scale to obtain RoIs.
-        _bboxes = (
-            det_bboxes[:, :4] * scale_factor if rescale else det_bboxes)
-        mask_rois = bbox2roi([_bboxes])
-        mask_feats = self.mask_roi_extractor(
-            x[:len(self.mask_roi_extractor.featmap_strides)], mask_rois)
-        if self.with_shared_head:
-            mask_feats = self.shared_head(mask_feats)
-        mask_pred = self.mask_head(mask_feats)
-        if decode_mask:
-            segm_result = self.mask_head.get_seg_masks(mask_pred, _bboxes,
-                                            det_labels,
-                                            self.test_cfg.rcnn,
-                                            ori_shape, scale_factor,
-                                            rescale)
-            return segm_result
-        else:
-            mask_pred = mask_pred.sigmoid().cpu().numpy()
-            mask_encoded = partial(
-                self.mask_head.get_seg_masks,
-                mask_pred=mask_pred,
-                det_bboxes=_bboxes,
-                det_labels=det_labels,
-                rcnn_test_cfg=self.test_cfg.rcnn,
-                ori_shape=ori_shape,
-                scale_factor=scale_factor,
-                rescale=rescale,
-            )
-            # partial is a class
-            # we need to transfer required attributes as well
-            mask_encoded.num_classes = self.mask_head.num_classes
-            mask_encoded.class_agnostic = self.mask_head.class_agnostic
-            return mask_encoded
-MaskTestMixin.simple_test_mask = _simple_test_mask
-
-def _single_stage_test(self, img, img_meta, rescale=False, numpy_res=True, decode_mask=True):
+def _single_stage_test(self, img, img_metas, rescale=False, numpy_res=True, decode_mask=True):
     x = self.extract_feat(img)
     outs = self.bbox_head(x)
-    bbox_inputs = outs + (img_meta, self.test_cfg, rescale)
-    bbox_list = self.bbox_head.get_bboxes(*bbox_inputs)
+    bbox_list = self.bbox_head.get_bboxes(
+        *outs, img_metas, rescale=rescale)
     det_bboxes, det_labels = bbox_list[0]
     if numpy_res:
         det_bboxes = det_bboxes.cpu().numpy()
@@ -270,289 +150,204 @@ def _single_stage_test(self, img, img_meta, rescale=False, numpy_res=True, decod
     return det_bboxes, det_labels
 SingleStageDetector.simple_test = _single_stage_test
 
-def _two_stage_test(self, img, img_meta, proposals=None, rescale=False, numpy_res=True, decode_mask=True):
+def _two_stage_test(self, img, img_metas, proposals=None, rescale=False, numpy_res=True, decode_mask=True):
     """simple_test without bbox2result"""
     assert self.with_bbox, "Bbox head must be implemented."
 
     x = self.extract_feat(img)
+    
+    if proposals is None:
+        proposal_list = self.rpn_head.simple_test_rpn(x, img_metas)
+    else:
+        proposal_list = proposals
 
-    proposal_list = self.simple_test_rpn(
-        x, img_meta, self.test_cfg.rpn) if proposals is None else proposals
+    return self.roi_head.simple_test(
+        x, proposal_list, img_metas,
+        rescale=rescale, numpy_res=numpy_res,
+    )
+TwoStageDetector.simple_test = _two_stage_test 
+
+def _roi_test(self, x, proposal_list, img_metas,
+    proposals=None, rescale=False, numpy_res=True):
 
     det_bboxes, det_labels = self.simple_test_bboxes(
-        x, img_meta, proposal_list, self.test_cfg.rcnn, rescale=rescale)
+        x, img_metas, proposal_list, self.test_cfg, rescale=rescale)
+    # remove the batch dimension
+    det_bboxes = det_bboxes[0]
+    det_labels = det_labels[0]
 
     if self.with_mask:
         segm_results = self.simple_test_mask(
-            x, img_meta, det_bboxes, det_labels, rescale=rescale,
-            decode_mask=decode_mask,
+            x, img_metas, det_bboxes, det_labels, rescale=rescale,
         )
 
     if numpy_res:
         det_bboxes = det_bboxes.cpu().numpy()
         det_labels = det_labels.cpu().numpy()
-        if self.with_mask and decode_mask:
+        if self.with_mask:
+            # segm_results = mmcv.concat_list(segm_results)
             segm_results = np.asarray(segm_results)
 
     if self.with_mask:
         return det_bboxes, det_labels, segm_results
     else:
         return det_bboxes, det_labels
-TwoStageDetector.simple_test = _two_stage_test
+StandardRoIHead.simple_test = _roi_test
 
-def _cascade_rcnn_simple_test(self, img, img_meta, proposals=None, rescale=False, numpy_res=True, decode_mask=True):
-    assert numpy_res
-    assert not self.test_cfg.keep_all_stages
-    x = self.extract_feat(img)
-    proposal_list = self.simple_test_rpn(
-        x, img_meta, self.test_cfg.rpn) if proposals is None else proposals
-
-    img_shape = img_meta[0]['img_shape']
-    ori_shape = img_meta[0]['ori_shape']
-    scale_factor = img_meta[0]['scale_factor']
+def _cascade_roi_simple_test(self, x, proposal_list, img_metas,
+    proposals=None, rescale=False, numpy_res=True):
+    """Test without augmentation."""
+    assert self.with_bbox, 'Bbox head must be implemented.'
+    num_imgs = len(proposal_list)
+    img_shapes = tuple(meta['img_shape'] for meta in img_metas)
+    ori_shapes = tuple(meta['ori_shape'] for meta in img_metas)
+    scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
 
     # "ms" in variable names means multi-stage
     ms_bbox_result = {}
     ms_segm_result = {}
     ms_scores = []
-    rcnn_test_cfg = self.test_cfg.rcnn
+    rcnn_test_cfg = self.test_cfg
 
     rois = bbox2roi(proposal_list)
     for i in range(self.num_stages):
-        bbox_roi_extractor = self.bbox_roi_extractor[i]
-        bbox_head = self.bbox_head[i]
+        bbox_results = self._bbox_forward(i, x, rois)
 
-        bbox_feats = bbox_roi_extractor(
-            x[:len(bbox_roi_extractor.featmap_strides)], rois)
-        if self.with_shared_head:
-            bbox_feats = self.shared_head(bbox_feats)
-
-        cls_score, bbox_pred = bbox_head(bbox_feats)
+        # split batch bbox prediction back to each image
+        cls_score = bbox_results['cls_score']
+        bbox_pred = bbox_results['bbox_pred']
+        num_proposals_per_img = tuple(
+            len(proposals) for proposals in proposal_list)
+        rois = rois.split(num_proposals_per_img, 0)
+        cls_score = cls_score.split(num_proposals_per_img, 0)
+        if isinstance(bbox_pred, torch.Tensor):
+            bbox_pred = bbox_pred.split(num_proposals_per_img, 0)
+        else:
+            bbox_pred = self.bbox_head[i].bbox_pred_split(
+                bbox_pred, num_proposals_per_img)
         ms_scores.append(cls_score)
 
-        if self.test_cfg.keep_all_stages:
-            det_bboxes, det_labels = bbox_head.get_det_bboxes(
-                rois,
-                cls_score,
-                bbox_pred,
-                img_shape,
-                scale_factor,
-                rescale=rescale,
-                cfg=rcnn_test_cfg)
-            bbox_result = bbox2result(det_bboxes, det_labels,
-                                        bbox_head.num_classes)
-            ms_bbox_result['stage{}'.format(i)] = bbox_result
-
-            if self.with_mask:
-                mask_roi_extractor = self.mask_roi_extractor[i]
-                mask_head = self.mask_head[i]
-                if det_bboxes.shape[0] == 0:
-                    mask_classes = mask_head.num_classes - 1
-                    segm_result = [[] for _ in range(mask_classes)]
-                else:
-                    _bboxes = (
-                        det_bboxes[:, :4] *
-                        scale_factor if rescale else det_bboxes)
-                    mask_rois = bbox2roi([_bboxes])
-                    mask_feats = mask_roi_extractor(
-                        x[:len(mask_roi_extractor.featmap_strides)],
-                        mask_rois)
-                    if self.with_shared_head:
-                        mask_feats = self.shared_head(mask_feats, i)
-                    mask_pred = mask_head(mask_feats)
-                    segm_result = mask_head.get_seg_masks(
-                        mask_pred, _bboxes, det_labels, rcnn_test_cfg,
-                        ori_shape, scale_factor, rescale)
-                ms_segm_result['stage{}'.format(i)] = segm_result
-
         if i < self.num_stages - 1:
-            bbox_label = cls_score.argmax(dim=1)
-            rois = bbox_head.regress_by_class(rois, bbox_label, bbox_pred,
-                                                img_meta[0])
+            bbox_label = [s[:, :-1].argmax(dim=1) for s in cls_score]
+            rois = torch.cat([
+                self.bbox_head[i].regress_by_class(rois[j], bbox_label[j],
+                                                    bbox_pred[j],
+                                                    img_metas[j])
+                for j in range(num_imgs)
+            ])
 
-    cls_score = sum(ms_scores) / self.num_stages
-    det_bboxes, det_labels = self.bbox_head[-1].get_det_bboxes(
-        rois,
-        cls_score,
-        bbox_pred,
-        img_shape,
-        scale_factor,
-        rescale=rescale,
-        cfg=rcnn_test_cfg)
-    
-    ms_bbox_result['ensemble'] = [det_bboxes, det_labels]
+    # average scores of each image by stages
+    cls_score = [
+        sum([score[i] for score in ms_scores]) / float(len(ms_scores))
+        for i in range(num_imgs)
+    ]
+
+    # apply bbox post-processing to each image individually
+    det_bboxes = []
+    det_labels = []
+    for i in range(num_imgs):
+        det_bbox, det_label = self.bbox_head[-1].get_bboxes(
+            rois[i],
+            cls_score[i],
+            bbox_pred[i],
+            img_shapes[i],
+            scale_factors[i],
+            rescale=rescale,
+            cfg=rcnn_test_cfg)
+        det_bboxes.append(det_bbox)
+        det_labels.append(det_label)
+
+    if torch.onnx.is_in_onnx_export():
+        return det_bboxes, det_labels
+    # bbox_results = [
+    #     bbox2result(det_bboxes[i], det_labels[i],
+    #                 self.bbox_head[-1].num_classes)
+    #     for i in range(num_imgs)
+    # ]
+    # ms_bbox_result['ensemble'] = bbox_results
+    ms_bbox_result['ensemble'] = [det_bboxes[0], det_labels[0]]
+
 
     if self.with_mask:
-        if det_bboxes.shape[0] == 0:
-            mask_classes = self.mask_head[-1].num_classes - 1
-            if decode_mask:
-                segm_result = [[] for _ in range(mask_classes)]
-            else:
-                segm_result = None
+        if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
+            mask_classes = self.mask_head[-1].num_classes
+            segm_results = [[[] for _ in range(mask_classes)]
+                            for _ in range(num_imgs)]
         else:
-            _bboxes = (
-                det_bboxes[:, :4] *
-                scale_factor if rescale else det_bboxes)
-            mask_rois = bbox2roi([_bboxes])
+            if rescale and not isinstance(scale_factors[0], float):
+                scale_factors = [
+                    torch.from_numpy(scale_factor).to(det_bboxes[0].device)
+                    for scale_factor in scale_factors
+                ]
+            _bboxes = [
+                det_bboxes[i][:, :4] *
+                scale_factors[i] if rescale else det_bboxes[i][:, :4]
+                for i in range(len(det_bboxes))
+            ]
+            mask_rois = bbox2roi(_bboxes)
+            num_mask_rois_per_img = tuple(
+                _bbox.size(0) for _bbox in _bboxes)
             aug_masks = []
             for i in range(self.num_stages):
-                mask_roi_extractor = self.mask_roi_extractor[i]
-                mask_feats = mask_roi_extractor(
-                    x[:len(mask_roi_extractor.featmap_strides)], mask_rois)
-                if self.with_shared_head:
-                    mask_feats = self.shared_head(mask_feats)
-                mask_pred = self.mask_head[i](mask_feats)
-                if decode_mask:
-                    aug_masks.append(mask_pred.sigmoid().cpu().numpy())
-                else:
-                    aug_masks.append(mask_pred.sigmoid())
-            if decode_mask:
-                merged_masks = merge_aug_masks(aug_masks,
-                                            [img_meta] * self.num_stages,
-                                            self.test_cfg.rcnn)
-                segm_result = self.mask_head[-1].get_seg_masks(
-                    merged_masks, _bboxes, det_labels, rcnn_test_cfg,
-                    ori_shape, scale_factor, rescale)
-            else:
-                merged_masks = torch.stack(aug_masks).mean(dim=0)
-                merged_masks = merged_masks.cpu().numpy()
-                mask_encoded = partial(
-                    self.mask_head[-1].get_seg_masks,
-                    mask_pred=merged_masks,
-                    det_bboxes=_bboxes,
-                    det_labels=det_labels,
-                    rcnn_test_cfg=rcnn_test_cfg,
-                    ori_shape=ori_shape,
-                    scale_factor=scale_factor,
-                    rescale=rescale,
-                )
-                # partial is a class
-                # we need to transfer required attributes as well
-                mask_encoded.num_classes = self.mask_head[-1].num_classes
-                mask_encoded.class_agnostic = self.mask_head[-1].class_agnostic
-                segm_result = mask_encoded
+                mask_results = self._mask_forward(i, x, mask_rois)
+                mask_pred = mask_results['mask_pred']
+                # split batch mask prediction back to each image
+                mask_pred = mask_pred.split(num_mask_rois_per_img, 0)
+                aug_masks.append(
+                    [m.sigmoid().cpu().numpy() for m in mask_pred])
 
-        ms_segm_result['ensemble'] = segm_result
+            # apply mask post-processing to each image individually
+            segm_results = []
+            for i in range(num_imgs):
+                if det_bboxes[i].shape[0] == 0:
+                    segm_results.append(
+                        [[]
+                            for _ in range(self.mask_head[-1].num_classes)])
+                else:
+                    aug_mask = [mask[i] for mask in aug_masks]
+                    merged_masks = merge_aug_masks(
+                        aug_mask, [[img_metas[i]]] * self.num_stages,
+                        rcnn_test_cfg)
+                    segm_result = self.mask_head[-1].get_seg_masks(
+                        merged_masks, _bboxes[i], det_labels[i],
+                        rcnn_test_cfg, ori_shapes[i], scale_factors[i],
+                        rescale)
+                    segm_results.append(segm_result)
+        ms_segm_result['ensemble'] = segm_results
+
+    # if self.with_mask:
+    #     results = list(
+    #         zip(ms_bbox_result['ensemble'], ms_segm_result['ensemble']))
+    # else:
+    #     results = ms_bbox_result['ensemble']
+    # return results
 
     if numpy_res:
         det_bboxes, det_labels = ms_bbox_result['ensemble']
         det_bboxes = det_bboxes.cpu().numpy()
         det_labels = det_labels.cpu().numpy()
         if self.with_mask:
-            masks = ms_segm_result['ensemble']
-            if decode_mask:
-                masks = np.asarray(masks)
+            masks = ms_segm_result['ensemble'][0]
+            # if deocde_mask:
+            #     # masks = mmcv.concat_list(masks)
+            #     masks = np.asarray(masks)
 
     if self.with_mask:
         return det_bboxes, det_labels, masks
     else:
         return det_bboxes, det_labels
-CascadeRCNN.simple_test = _cascade_rcnn_simple_test
-
-def _htc_simple_test(self, img, img_meta, proposals=None, rescale=False, numpy_res=True, decode_mask=True):
-    assert numpy_res
-    assert decode_mask
-    assert not self.test_cfg.keep_all_stages
-
-    x = self.extract_feat(img)
-    proposal_list = self.simple_test_rpn(
-        x, img_meta, self.test_cfg.rpn) if proposals is None else proposals
-
-    if self.with_semantic:
-        _, semantic_feat = self.semantic_head(x)
-    else:
-        semantic_feat = None
-
-    img_shape = img_meta[0]['img_shape']
-    ori_shape = img_meta[0]['ori_shape']
-    scale_factor = img_meta[0]['scale_factor']
-
-    # "ms" in variable names means multi-stage
-    ms_bbox_result = {}
-    ms_segm_result = {}
-    ms_scores = []
-    rcnn_test_cfg = self.test_cfg.rcnn
-
-    rois = bbox2roi(proposal_list)
-    for i in range(self.num_stages):
-        bbox_head = self.bbox_head[i]
-        cls_score, bbox_pred = self._bbox_forward_test(
-            i, x, rois, semantic_feat=semantic_feat)
-        ms_scores.append(cls_score)
-
-        if i < self.num_stages - 1:
-            bbox_label = cls_score.argmax(dim=1)
-            rois = bbox_head.regress_by_class(rois, bbox_label, bbox_pred,
-                                                img_meta[0])
-
-    cls_score = sum(ms_scores) / float(len(ms_scores))
-    det_bboxes, det_labels = self.bbox_head[-1].get_det_bboxes(
-        rois,
-        cls_score,
-        bbox_pred,
-        img_shape,
-        scale_factor,
-        rescale=rescale,
-        cfg=rcnn_test_cfg)
-
-    ms_bbox_result['ensemble'] = (det_bboxes, det_labels)
-
-    if self.with_mask:
-        if det_bboxes.shape[0] == 0:
-            mask_classes = self.mask_head[-1].num_classes - 1
-            segm_result = [[] for _ in range(mask_classes)]
-        else:
-            _bboxes = (
-                det_bboxes[:, :4] *
-                scale_factor if rescale else det_bboxes)
-
-            mask_rois = bbox2roi([_bboxes])
-            aug_masks = []
-            mask_roi_extractor = self.mask_roi_extractor[-1]
-            mask_feats = mask_roi_extractor(
-                x[:len(mask_roi_extractor.featmap_strides)], mask_rois)
-            if self.with_semantic and 'mask' in self.semantic_fusion:
-                mask_semantic_feat = self.semantic_roi_extractor(
-                    [semantic_feat], mask_rois)
-                mask_feats += mask_semantic_feat
-            last_feat = None
-            for i in range(self.num_stages):
-                mask_head = self.mask_head[i]
-                if self.mask_info_flow:
-                    mask_pred, last_feat = mask_head(mask_feats, last_feat)
-                else:
-                    mask_pred = mask_head(mask_feats)
-                aug_masks.append(mask_pred.sigmoid().cpu().numpy())
-            merged_masks = merge_aug_masks(aug_masks,
-                                            [img_meta] * self.num_stages,
-                                            self.test_cfg.rcnn)
-            segm_result = self.mask_head[-1].get_seg_masks(
-                merged_masks, _bboxes, det_labels, rcnn_test_cfg,
-                ori_shape, scale_factor, rescale)
-        ms_segm_result['ensemble'] = segm_result
-
-    if numpy_res:
-        det_bboxes, det_labels = ms_bbox_result['ensemble']
-        det_bboxes = det_bboxes.cpu().numpy()
-        det_labels = det_labels.cpu().numpy()
-        if self.with_mask:
-            masks = ms_segm_result['ensemble']
-            if decode_mask:
-                masks = np.asarray(masks)
-
-    if self.with_mask:
-        return det_bboxes, det_labels, masks
-    else:
-        return det_bboxes, det_labels
-HybridTaskCascade.simple_test = _htc_simple_test
+CascadeRoIHead.simple_test = _cascade_roi_simple_test
 
 def init_detector(opts, device='cuda:0'):
     config = mmcv.Config.fromfile(opts.config)
     new_config = 'train_pipeline' in config or 'test_pipeline' in config
     if new_config:
-        assert opts.in_scale is not None, "New config does not support default input scale"
         # simulate old config
-        config.data.test.img_scale = 1
+        if opts.in_scale is None:
+            print('Warning: using new config and fixing size_divisor to 32')
+            config.data.test.img_scale = config.test_pipeline[1]['img_scale']
+        else:
+            config.data.test.img_scale = 1
         config.data.test.size_divisor = 32
     if opts.in_scale is not None:
         if 'ssd' in basename(opts.config):
@@ -569,13 +364,13 @@ def init_detector(opts, device='cuda:0'):
             config.data.test.img_scale = opts.in_scale
             config.data.test.resize_keep_ratio = True
     if opts.no_mask:
-        if 'mask_head' in config.model:
-            config.model['mask_head'] = None
+        if 'roi_head' in config.model and 'mask_head' in config.model['roi_head']:
+            config.model['roi_head']['mask_head'] = None
     config.model.pretrained = None
 
     model = build_detector(config.model, test_cfg=config.test_cfg)
     if opts.weights is not None:
-        weights = load_checkpoint(model, opts.weights)
+        weights = load_checkpoint(model, opts.weights, map_location='cpu' if device == 'cpu' else None)
         if 'CLASSES' in weights['meta']:
             model.CLASSES = weights['meta']['CLASSES']
         else:
@@ -604,7 +399,7 @@ def _prepare_data(img, img_transform, cfg, device):
             scale_factor=scale_factor,
             flip=False)
     ]
-    return dict(img=[img], img_meta=[img_meta])
+    return dict(img=[img], img_metas=[img_meta])
 
 def inference_detector(model, img, gpu_pre=True, numpy_res=True, decode_mask=True):
     # assume img has RGB channel ordering instead of BGR

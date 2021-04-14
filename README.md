@@ -10,6 +10,7 @@ This repo contains code for our ECCV 2020 [**paper**](https://arxiv.org/abs/2005
 
 The dataset used in this project (Argoverse-HD) can be found on the [**project page**](http://www.cs.cmu.edu/~mengtial/proj/streaming/).
 
+Apr 2021: Note that the code has been updated to match the setting in the streaming perception challenge (mostly about working with newer dependencies). To reproduce the numbers in our paper, please check out the [ECCV paper branch](../../tree/ECCV-paper).
 
 ## Contents
 

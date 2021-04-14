@@ -10,10 +10,17 @@ from os.path import join, isfile, split
 import numpy as np
 
 
-# the exp_list can be either a list of strings
-# or a single string pointing a file of a list of
-# experiment names
+# The exp_list can take 3 forms:
+
+# 1. An empty string represents all experiments under the "work_dir"
+# exp_list = ''
+
+# 2. A path to a file containing a list of experiment names
+# exp_list = 'exp-list.txt'
+
+# 3. A list of experiment names
 exp_list = ['rt_mrcnn50_nm_s0.5', 'srt_mrcnn50_nm_inf_s0.5']
+
 summary_name = 'Single vs Infinite GPUs'
 work_dir = '/data2/mengtial/Exp/Argoverse-HD/output'
 data_split = 'val'
@@ -27,12 +34,16 @@ header = [
     'Small RT', 'Miss', 'In-time', 'Mismatch',
 ]
 
-
-if isinstance(exp_list, str):
-    runs = open(exp_list).readlines()
-    runs = [r.strip() for r in runs]
+if exp_list:
+    if isinstance(exp_list, str):
+        runs = open(exp_list).readlines()
+        runs = [r.strip() for r in runs]
+    else:
+        runs = exp_list
 else:
-    runs = exp_list
+    runs = glob(join(work_dir, '*', data_split))
+    runs = [split(split(r)[0])[1] for r in runs]
+    runs = sorted(runs)
 
 n_method = 0
 out_path = join(work_dir, f'{summary_name}.csv')
@@ -53,14 +64,14 @@ with open(out_path, 'w', newline='\n') as f:
             n_total = time_info['n_total']
             if 'runtime_all' in time_info:
                 runtime_all = 1e3*np.asarray(time_info['runtime_all'])
-                n_processed = time_info['n_processed']
-                n_small_runtime = time_info['n_small_runtime']
+                n_processed = time_info.get('n_processed', None)
+                n_small_runtime = time_info.get('n_small_runtime', None)
                 time_stats = [
                     runtime_all.mean(),
                     runtime_all.std(ddof=1),
                     runtime_all.min(),
                     runtime_all.max(),
-                    n_small_runtime/n_processed,
+                    n_small_runtime/n_processed if (n_processed is not None and n_small_runtime is not None) else '',
                 ]
             else:
                 time_stats = 5*['']

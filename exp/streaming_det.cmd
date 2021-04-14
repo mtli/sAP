@@ -10,8 +10,8 @@ python det\rt_det.py ^
 	--data-root "%dataDir%\Argoverse-1.1\tracking" ^
 	--annot-path "%dataDir%\Argoverse-HD\annotations\val.json" ^
 	--fps 30 ^
-	--config "..\mmdetection\configs\mask_rcnn_r50_fpn_1x.py" ^
-	--weights "%dataDir%\ModelZoo\mmdet\mask_rcnn_r50_fpn_2x_20181010-41d35c05.pth" ^
+	--config "..\mmdetection\configs\mask_rcnn\mask_rcnn_r50_fpn_2x_coco.py" ^
+	--weights "%dataDir%\ModelZoo\mmdet\mask_rcnn_r50_fpn_2x_coco_bbox_mAP-0.392__segm_mAP-0.354_20200505_003907-3e542a40.pth" ^
 	--in-scale %scale% ^
 	--out-dir "%dataDir%\Exp\Argoverse-HD\output\rt_%mrcnn50_nm%_s%scale%\val" ^
 	--overwrite ^

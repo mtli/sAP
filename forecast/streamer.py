@@ -28,7 +28,7 @@ from det import imread, parse_det_result
 from det.det_apis import init_detector, inference_detector
 from track import track_based_shuffle
 # from track import iou_assoc
-from track.cython import iou_assoc
+from track.iou_assoc_cp import iou_assoc
 
 from forecast import extrap_clean_up
 from forecast.pps_forecast_kf import \

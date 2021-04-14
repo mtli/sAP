@@ -25,7 +25,7 @@ from util.bbox import ltrb2ltwh_, ltwh2ltrb_
 from det import imread, parse_det_result, eval_ccf
 from track import vis_track, track_based_shuffle
 # from track import iou_assoc
-from track.cython import iou_assoc
+from track.iou_assoc_cp import iou_assoc
 from forecast import extrap_clean_up
 
 
